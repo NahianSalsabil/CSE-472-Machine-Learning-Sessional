@@ -26,7 +26,7 @@ for i in range(len(Y)):
 X = np.array(X)
 
 bias_matrix = np.diag(np.full(X.shape[1], 0.00000011))
-fig = plt.figure(figsize=(7,7), num=1) 
+fig = plt.figure(figsize=(7,7), num=1) z
 
 
 def visualization(X, clusters, fig):
