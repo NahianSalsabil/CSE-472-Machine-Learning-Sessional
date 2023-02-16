@@ -16,10 +16,10 @@ from scipy.stats import multivariate_normal
 
 def visualization(X, clusters, fig):
     ax0 = fig.add_subplot(111)
-    ax0.scatter(X[:,0], X[:,1], linewidths=0.001)
+    ax0.scatter(X[:,0], X[:,1], s=0.5)
     ax0.set_title("GMM-EM")
     
-    x, y = np.mgrid[np.min(X[:, 0]):np.max(X[:, 0]):.01, np.min(X[:, 1]):np.max(X[:, 1]):.01]
+    x, y = np.mgrid[np.min(X[:, 0]):np.max(X[:, 0]):.05, np.min(X[:, 1]):np.max(X[:, 1]):.05]
     positions = np.dstack((x, y))
     for i in range(len(clusters)):
         multi_normal = multivariate_normal(mean=clusters[i]['mu'],cov=clusters[i]['sigma'])
@@ -31,9 +31,9 @@ def visualization(X, clusters, fig):
 def animate(X, clusters):
     fig1 = plt.figure(num=1)
     ax0 = fig1.add_subplot(111)
-    ax0.scatter(X[:,0], X[:,1], linewidths=0.001)
+    ax0.scatter(X[:,0], X[:,1], s=0.5)
     
-    x, y = np.mgrid[np.min(X[:, 0]):np.max(X[:, 0]):.01, np.min(X[:, 1]):np.max(X[:, 1]):.01]
+    x, y = np.mgrid[np.min(X[:, 0]):np.max(X[:, 0]):.05, np.min(X[:, 1]):np.max(X[:, 1]):.05]
     positions = np.dstack((x, y))
     for i in range(len(clusters)):
         multi_normal = multivariate_normal(mean=clusters[i]['mu'],cov=clusters[i]['sigma'])
@@ -41,7 +41,7 @@ def animate(X, clusters):
         ax0.contour(x, y, multi_normal.pdf(positions),colors='black',alpha=0.3)
         ax0.scatter(clusters[i]['mu'][0], clusters[i]['mu'][1] ,c='grey',zorder=10,s=100)
         
-    plt.pause(0.000005)
+    plt.pause(0.00000005)
     fig1.clf()
     plt.show()
     
@@ -117,6 +117,7 @@ def train(X, no_clusters, max_iter, isanimate, fig):
 if __name__ == '__main__':
     # Read Data
     filename = sys.argv[1]
+    loop_no = int(sys.argv[2])
     data = pd.read_csv(filename)
     Y = data.to_numpy()
 
@@ -129,13 +130,7 @@ if __name__ == '__main__':
         X.append(data_point)
     X = np.array(X)
 
-    #Compress Data
-    if X.shape[1] > 2:
-        from sklearn.decomposition import PCA
-        pca = PCA(n_components=2)
-        data = pca.fit_transform(X)
-        print("PCA done. New shape: ", data.shape)
-        X = data  
+     
 
     bias_matrix = np.diag(np.full(X.shape[1], 0.00000011))
     fig = plt.figure(figsize=(7,7), num=1)
@@ -148,9 +143,14 @@ if __name__ == '__main__':
 
     likelihood_for_clusters = []
     for i in range(len(no_clusters)):
-        clusters, log_likelihood = train(X, no_clusters[i], max_iteration, False, fig)
-        print("no_clusters: ", no_clusters[i], "likelihood: ", log_likelihood)
-        likelihood_for_clusters.append(log_likelihood)
+        current_cluster_log_likelihood = -999999999;
+        for j in range(loop_no):
+            clusters, log_likelihood = train(X, no_clusters[i], max_iteration, False, fig)
+            if log_likelihood > current_cluster_log_likelihood:
+                current_cluster_log_likelihood = log_likelihood
+                
+        print("no_clusters: ", no_clusters[i], "likelihood: ", current_cluster_log_likelihood)
+        likelihood_for_clusters.append(current_cluster_log_likelihood)
       
         
     #Plot the Log-Likelihood vs k
@@ -173,4 +173,14 @@ if __name__ == '__main__':
     print("k* = ", k_star)
     
     # Train with k* and plot the animation of the clusters
+    
+    #Compress Data
+    if X.shape[1] > 2:
+        from sklearn.decomposition import PCA
+        pca = PCA(n_components=2)
+        data = pca.fit_transform(X)
+        print("PCA done. New shape: ", data.shape)
+        X = data 
+    bias_matrix = np.diag(np.full(X.shape[1], 0.00000011))
+      
     clusters, log_likelihood = train(X, k_star, max_iteration, True, fig)
